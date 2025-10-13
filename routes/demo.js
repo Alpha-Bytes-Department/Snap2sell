@@ -5,7 +5,8 @@ export const demoData = /*javascript*/ `{
 				quantity: 1, // [1] always 1
 			},
 		},
-		condition: '', // [NEW,	USED,...etc] ...
+		condition: 'USED', by default "USED" // [NEW,	USED,...etc] ...
+		conditionNote: '', // write a condition description must...
 		product: {
 			title: ''
 			/* Create an SEO-friendly title (max 80 characters) including the

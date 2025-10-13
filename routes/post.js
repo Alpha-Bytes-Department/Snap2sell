@@ -2,6 +2,7 @@ import axios from 'axios';
 import multer from 'multer';
 import { getLocation } from '../utils/location.js';
 import { getPolicies } from '../utils/policies.js';
+import { createDynamicFulfillmentPolicy } from '../utils/shipping.js';
 import { demoData } from './demo.js';
 import { openai } from '../index.js';
 
@@ -32,7 +33,7 @@ export const post = (app) => {
 
 		// Ask GPT for a **single combined description**
 		const response = await openai.chat.completions.create({
-			model: 'gpt-4o', // or "gpt-4o" if you want max detail
+			model: 'gpt-4o',
 			messages: [
 				{
 					role: 'user',
@@ -152,14 +153,25 @@ export const post = (app) => {
 				}
 			);
 
-			// create offer
+			// Generate dynamic fulfillment policy based on item weight/size
+			const dynamicFulfillmentPolicyId = await createDynamicFulfillmentPolicy(
+				token,
+				inventory.product.title,
+				inventory.product.description,
+				imageUrls
+			);
+
+			// Create offer with dynamic fulfillment policy
 			const {
 				data: { offerId },
 			} = await axios.post(
 				'https://api.ebay.com/sell/inventory/v1/offer?marketplaceId=EBAY_GB',
 				{
 					...offer,
-					listingPolicies: policies,
+					listingPolicies: {
+						...policies,
+						fulfillmentPolicyId: dynamicFulfillmentPolicyId,
+					},
 					merchantLocationKey,
 					sku,
 					marketplaceId: 'EBAY_GB',
@@ -173,7 +185,7 @@ export const post = (app) => {
 				}
 			);
 
-			// publish
+			// Publish
 			const {
 				data: { listingId },
 			} = await axios.post(
