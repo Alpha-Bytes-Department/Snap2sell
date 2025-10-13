@@ -5,6 +5,8 @@ import express from 'express';
 import { auth } from './routes/auth.js';
 import { post } from './routes/post.js';
 import OpenAI from 'openai';
+import { MongoClient } from 'mongodb';
+import path from 'path';
 
 export const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
@@ -13,23 +15,31 @@ const config = {
 	client_secret: process.env.CLIENT_SECRET,
 	redirect_uri: process.env.REDIRECT_URI,
 	port: process.env.PORT || 3000,
+	db_url: process.env.DATABASE_URL,
 };
+
+const client = new MongoClient(config.db_url);
 
 const app = express();
 
-app.use(express.json());
+(async () => {
+	await client.connect();
+	const db = client.db('snap2sell');
 
-app.get('/', (_, res) => {
-	res.send('Hello from Snap2Sell!');
-});
+	app.use(express.json());
 
-/**
- * Routes
- */
-[auth, post].forEach((route) => route(app, config));
+	app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')));
 
-app.listen(config.port, () => {
-	console.log(`🚀 Server ready at http://localhost:${config.port}`);
-});
+	app.get('/', (_, res) => {
+		res.send('Hello from Snap2Sell!');
+	});
 
-export default app;
+	/**
+	 * Routes
+	 */
+	[auth, post].forEach((route) => route(app, { ...config, db }));
+
+	app.listen(config.port, () => {
+		console.log(`🚀 Server ready at http://localhost:${config.port}`);
+	});
+})();

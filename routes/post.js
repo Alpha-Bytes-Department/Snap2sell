@@ -5,8 +5,25 @@ import { getPolicies } from '../utils/policies.js';
 import { createDynamicFulfillmentPolicy } from '../utils/shipping.js';
 import { demoData } from './demo.js';
 import { openai } from '../index.js';
+import fs from 'fs';
+import path from 'path';
+
+const storage = multer.diskStorage({
+	destination: (req, file, cb) => {
+		const uploadPath = path.join(process.cwd(), 'uploads');
+		if (!fs.existsSync(uploadPath))
+			fs.mkdirSync(uploadPath, { recursive: true });
+		cb(null, uploadPath);
+	},
+	filename: (req, file, cb) => {
+		const ext = path.extname(file.originalname);
+		const name = `${Date.now()}-${Math.floor(Math.random() * 1e9)}${ext}`;
+		cb(null, name); // filename is now available as file.filename
+	},
+});
 
 const upload = multer({ storage: multer.memoryStorage() });
+const upload2 = multer({ storage });
 
 export const post = (app) => {
 	app.post('/ai', upload.array('images'), async (req, res) => {
@@ -94,7 +111,7 @@ export const post = (app) => {
 		res.json(data);
 	});
 
-	app.post('/post', upload.array('images'), async (req, res) => {
+	app.post('/post', upload2.array('images'), async (req, res) => {
 		let { inventory, offer } = JSON.parse(req.body.data);
 
 		inventory.product.aspects = Object.fromEntries(
@@ -104,29 +121,14 @@ export const post = (app) => {
 			])
 		);
 
-		console.log('d0', JSON.stringify(inventory));
-
 		if (!inventory || !offer) {
 			return res.status(400).json({ error: 'Invalid data' });
 		}
 
-		let imageUrls = [];
-
-		try {
-			if (!req.files?.length) {
-				return res.status(400).json({ error: 'No images uploaded' });
-			}
-			for (const { buffer } of req.files) {
-				const { data } = await axios.post(
-					`https://api.imgbb.com/1/upload?key=${process.env.IMGBB_API_KEY}`,
-					new URLSearchParams({ image: buffer.toString('base64') })
-				);
-				imageUrls.push(data.data.url);
-			}
-		} catch ({ response, message }) {
-			console.error('Upload error:', response?.data || message);
-			return res.status(500).json({ error: 'Image upload failed' });
-		}
+		let imageUrls = req.files.map(
+			(file) =>
+				`https://plbck79v-9000.inc1.devtunnels.ms/uploads/${file.filename}`
+		);
 
 		Object.assign(inventory?.product, { imageUrls });
 

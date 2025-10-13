@@ -2,7 +2,9 @@ import axios from 'axios';
 import qs from 'qs';
 
 export const auth = (app, config) => {
-	app.get('/connect', (_, res) => {
+	const users = config.db.collection('users');
+
+	app.get('/connect', ({ query }, res) => {
 		try {
 			const scopes = [
 				'https://api.ebay.com/oauth/api_scope',
@@ -14,8 +16,8 @@ export const auth = (app, config) => {
 
 			const authUrl = `https://auth.ebay.com/oauth2/authorize?client_id=${
 				config.client_id
-			}&response_type=code&redirect_uri=${
-				config.redirect_uri
+			}&response_type=code&redirect_uri=${config.redirect_uri}&state=${
+				query.state
 			}&scope=${encodeURIComponent(scopes)}`;
 
 			res.redirect(authUrl);
@@ -46,12 +48,24 @@ export const auth = (app, config) => {
 				}
 			);
 
-			res.send(data);
+			await users.insertOne({ state: query.state, ...data });
+
+			res.status(204).send('✅ Connected to eBay.');
 		} catch (error) {
 			console.error(error.response?.data || error);
 			res
 				.status(error.response?.status || 500)
 				.send('❌ Failed to connect eBay.');
+		}
+	});
+
+	app.get('/retrieve-token/:state', async ({ params }, res) => {
+		const user = await users.findOne({ state: params.state });
+
+		if (user) {
+			res.json(user);
+		} else {
+			res.status(404).send('User not found');
 		}
 	});
 
