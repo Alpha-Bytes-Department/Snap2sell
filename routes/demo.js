@@ -5,8 +5,8 @@ export const demoData = /*javascript*/ `{
 				quantity: 1, // [1] always 1
 			},
 		},
-		condition: 'USED', by default "USED" // [NEW,	USED,...etc] ...
-		conditionNote: '', // write a condition description must...
+		condition: 'USED_EXCELLENT', // Valid: NEW, NEW_OTHER, NEW_WITH_DEFECTS, CERTIFIED_REFURBISHED, EXCELLENT_REFURBISHED, VERY_GOOD_REFURBISHED, GOOD_REFURBISHED, SELLER_REFURBISHED, LIKE_NEW, USED_EXCELLENT, USED_VERY_GOOD, USED_GOOD, USED_ACCEPTABLE, PRE_OWNED_EXCELLENT, PRE_OWNED_FAIR, FOR_PARTS_OR_NOT_WORKING
+		conditionDescription: '', // Custom condition note - describe wear, defects, etc. (Max: 1000 characters). Only for USED/REFURBISHED items, NOT for NEW conditions. eBay will ignore this field if used with NEW conditions.
 		product: {
 			title: ''
 			/* Create an SEO-friendly title (max 80 characters) including the
@@ -14,12 +14,12 @@ brand, model, key specifications (e.g., size, color), and condition if
 used. Use UK English. Accurately detect brands and models from photos
 and text */,
 			description: ''
-			/*Produce detailed, professional descriptions tailored to the item’s
+			/*Produce detailed, professional descriptions tailored to the item's
 category and features, even with minimal user input. Plain-text
 description (no HTML) that includes:
 - Item features and specifications.
 - Condition details (e.g., wear, defects).
-- What’s included (e.g., original packaging, accessories).
+- What's included (e.g., original packaging, accessories).
 - Functionality (e.g., "fully tested and working").
 - Positive and negative aspects (e.g., "like new," "small scratch on side").
 - Use short paragraphs or bullet points. */,
