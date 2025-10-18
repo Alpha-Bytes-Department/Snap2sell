@@ -2,7 +2,6 @@ import axios from 'axios';
 import multer from 'multer';
 import { getLocation } from '../utils/location.js';
 import { getPolicies } from '../utils/policies.js';
-import { createDynamicFulfillmentPolicy } from '../utils/shipping.js';
 import { demoData } from './demo.js';
 import { openai } from '../index.js';
 import fs from 'fs';
@@ -155,14 +154,6 @@ export const post = (app) => {
 				}
 			);
 
-			// Generate dynamic fulfillment policy based on item weight/size
-			const dynamicFulfillmentPolicyId = await createDynamicFulfillmentPolicy(
-				token,
-				inventory.product.title,
-				inventory.product.description,
-				imageUrls
-			);
-
 			// Create offer with dynamic fulfillment policy
 			const {
 				data: { offerId },
@@ -170,10 +161,7 @@ export const post = (app) => {
 				'https://api.ebay.com/sell/inventory/v1/offer?marketplaceId=EBAY_GB',
 				{
 					...offer,
-					listingPolicies: {
-						...policies,
-						fulfillmentPolicyId: dynamicFulfillmentPolicyId,
-					},
+					listingPolicies: policies,
 					merchantLocationKey,
 					sku,
 					marketplaceId: 'EBAY_GB',
@@ -208,7 +196,7 @@ export const post = (app) => {
 				listingId,
 			});
 		} catch (error) {
-			console.error(error.response?.data || error.message);
+			console.error(JSON.stringify(error.response?.data, null, 2));
 			res
 				.status(error.response?.status || 500)
 				.json({ error: error.response?.data || error.message });
