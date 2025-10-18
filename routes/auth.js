@@ -2,9 +2,7 @@ import axios from 'axios';
 import qs from 'qs';
 
 export const auth = (app, config) => {
-	const users = config.db.collection('users');
-
-	app.get('/connect', ({ query }, res) => {
+	app.get('/connect', (_, res) => {
 		try {
 			const scopes = [
 				'https://api.ebay.com/oauth/api_scope',
@@ -16,8 +14,8 @@ export const auth = (app, config) => {
 
 			const authUrl = `https://auth.ebay.com/oauth2/authorize?client_id=${
 				config.client_id
-			}&response_type=code&redirect_uri=${config.redirect_uri}&state=${
-				query.state
+			}&response_type=code&redirect_uri=${
+				config.redirect_uri
 			}&scope=${encodeURIComponent(scopes)}`;
 
 			res.redirect(authUrl);
@@ -48,24 +46,19 @@ export const auth = (app, config) => {
 				}
 			);
 
-			await users.insertOne({ state: query.state, ...data });
-
-			res.status(204).send('✅ Connected to eBay.');
+			res.status(301).redirect(
+				`snap2sell://callback#${Buffer.from(
+					JSON.stringify({
+						access_token: data.access_token,
+						refresh_token: data.refresh_token,
+					})
+				).toString('base64')}`
+			);
 		} catch (error) {
 			console.error(error.response?.data || error);
 			res
 				.status(error.response?.status || 500)
 				.send('❌ Failed to connect eBay.');
-		}
-	});
-
-	app.get('/retrieve-token/:state', async ({ params }, res) => {
-		const user = await users.findOne({ state: params.state });
-
-		if (user) {
-			res.json(user);
-		} else {
-			res.status(404).send('User not found');
 		}
 	});
 
